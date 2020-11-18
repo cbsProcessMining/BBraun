@@ -1,0 +1,60 @@
+import os
+import json
+import re
+import pandas as pd
+
+from pycelonis import get_celonis
+from _utils import parse_celonis_url
+
+def find_columns(analysis): #find_columns(analysis, found_columns):
+    doc = analysis.published.data
+    formulas = analysis.saved_formulas
+
+    kpi_columns = []
+    for kpi in formulas:
+        kpi_columns = kpi_columns + re.findall(r'(\"[a-zA-Z0-9_]+\"\.\"[a-zA-Z0-9_-]+\")', kpi.data['name'])
+        kpi_columns = kpi_columns +  re.findall(r'(\"[a-zA-Z0-9_]+\"\.\"[a-zA-Z0-9_-]+\")', kpi.data['template'])
+
+    json_doc_dump = json.dumps(doc, ensure_ascii=False)
+    raw_columns = re.findall(r'(\\\"[a-zA-Z0-9_]+\\\"\.\\\"[a-zA-Z0-9_-]+\\\")', json_doc_dump) + kpi_columns
+
+    columns = []
+    for col in raw_columns:
+        colum = col.replace('\\','')
+        table, col = colum.split('.')
+        if colum.split('.') not in columns and '_ACTIVITIES' not in table: # and colum.split('.') not in found_columns:
+            columns.append([analysis.name, table, col]) #columns.append([table, col])
+
+    return columns
+
+def export_columns(url, api_token):
+    c = get_celonis(url, api_token)
+    url_options = parse_celonis_url(url)
+
+    if url_options['type'] == 'team' and 'workspaces' in url_options['query']:
+        workspace_id = url_options['query']['workspaces']
+        workspace = c.workspaces.find(workspace_id)
+        columns = []
+        for analysis in workspace.analyses:
+            columns = columns + find_columns(analysis)# columns + find_columns(analysis, columns)
+
+    elif url_options['type'] == 'analysis':
+        analysis_id = url_options['id']
+        analysis = c.analyses.find(analysis_id)
+        columns = find_columns(analysis, [])
+
+    else: 
+        print('The given url is no workspace or analyses url.')
+
+    df_col = pd.DataFrame(columns, columns=['Analysis','Table', 'Column']) #df_col = pd.DataFrame(columns, columns=['Table', 'Column'])
+
+    if (not os.path.exists(os.path.dirname('./results/'))):
+        os.makedirs(os.path.dirname('./results/'))
+
+    with pd.ExcelWriter('./results/Used_columns.xlsx') as writer:
+        df_col.to_excel(writer, sheet_name='Columns', index=False)
+
+url = 'URL_OF_THE_WORKSPACE'
+api_token = 'YOUR_API_TOKEN'
+
+export_columns(url, api_token)
