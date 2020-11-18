@@ -1,0 +1,112 @@
+import sys
+from os.path import dirname, abspath
+#_PARENT_DIR = dirname(dirname(dirname(abspath(__file__))))
+#sys.path.append(_PARENT_DIR)
+#from utils._utils import parse_celonis_url, get_user_data, get_logger              ### <--
+from pycelonis import get_celonis
+import argparse
+#logger = get_logger()
+def unify_tables(url, api_token, datapool, tables, tableSchema, function = 'null'):
+    
+    #loop through defined tables
+    #for table_name in tables:
+       
+    c = get_celonis(url, api_token)
+    #get_user_data(c, 'Table Unifier')
+    #url_options= parse_celonis_url(url)                                            ### <--
+    #pool = c.pools.find(url_options['id'])                                         ### <--
+    
+    pool = c.pools.find(datapool)                                                   ### <--
+
+    minReq = []
+    maxReq = []
+    sameTables = []
+    schemalist = tableSchema                                                        # added to extract required table schemas (in python list format)
+    columns = ''
+    select = ''
+    
+    # create or find global data job 
+    try:
+        global_dj = pool.data_jobs.find('Unify Tables')
+    except:
+        global_dj = pool.create_data_job(name = 'Unify Tables')
+    
+    #loop through defined tables
+    for table_name in tables:
+    
+        # find tables to unify
+        x = 0
+        for schema in global_dj.tables:
+            for table in schema:
+                x = x + 1
+                if table['schemaName'] not in schemalist:
+                    continue
+                if table['name'] == table_name:
+                    sameTables.append(table)
+        
+        if len(sameTables) == 0:
+            print('TABLE', table_name, 'CAN NOT BE UNIFIED! Not existing in source systems!')
+            global_dj.create_transformation(name = "Unify " + table_name, statement = '-- no existing tables to unify in defined source systems')
+            continue
+
+        else:
+            # create minimal column requirement
+            for col in sameTables[0]['columns']:
+                try:
+                    if col in sameTables[1]['columns']:                                              # ERROR CHECKING !
+                        minReq.append(col)
+                except:
+                    continue
+
+            """
+            #only required if function = 'min'
+
+            if len(sameTables) > 2:
+                for table in sameTables[2:]:
+                    for col in minReq:
+                        if col not in table['columns']:
+                            minReq.pop(col)
+                # create transformation statement for minimal table requirement
+
+            if function == 'min':
+                for col in minReq:
+                    if(minReq.index(col) == 0):
+                        columns += '{}\n'.format(col['name'])
+                    else:
+                        columns += ',{}\n'.format(col['name'])
+                for table in sameTables:
+                    select += 'SELECT \n{}FROM "{}"."{}"'.format(columns, table['schemaName'], table_name)
+                    if table != sameTables[len(sameTables)-1]:
+                        select += '\nUNION ALL\n'
+            """            
+
+            # create transformation for statement for extension with null
+            if function == 'null':
+                #columns = ''
+                #select = ''
+                
+                for table in sameTables:
+                    for col in table['columns']:
+                        if col not in maxReq:
+                            maxReq.append(col)
+                for table in sameTables:
+                    for col in maxReq:
+                        if(maxReq.index(col) == 0):
+                            columns += "'" + table['schemaName'] + "' " + 'AS "SCHEMA"\n' + ',{}\n'.format('"' + col['name'] + '"' if col in table['columns'] else 'NULL AS "' + col['name'] + '"')
+                        else:
+                            columns += ',{}\n'.format('"' + col['name'] + '"' if col in table['columns'] else 'NULL AS "' + col['name'] + '"')
+                    select += 'SELECT \n{}FROM "{}"."{}"'.format(columns, table['schemaName'], table_name)
+                    columns = ''
+                    if table != sameTables[len(sameTables)-1]:
+                        select += '\nUNION ALL\n'
+            # create transformation
+            #statement = 'DROP VIEW IF EXISTS "{}_UNIFIED";\n\nCreate VIEW "{}_UNIFIED" AS(\n{}\n);'.format(table_name, table_name, select)
+            statement = 'DROP VIEW IF EXISTS "{}";\n\nCreate VIEW "{}" AS(\n{}\n);'.format(table_name, table_name, select)                      ### <-- Unified
+            global_dj.create_transformation(name = "Unify " + table_name, statement = statement)
+            print('The union statement has been saved in the global data job "Unify Tables" for Table', table_name)
+            select = ''
+            sameTables = []
+            minReq = []
+            maxReq = []
+            
+            # reminder: datatypes
