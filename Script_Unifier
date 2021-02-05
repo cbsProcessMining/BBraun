@@ -1,0 +1,35 @@
+pip install ftfy
+from pycelonis import get_celonis
+import os
+from ftfy import fix_text #requires pip install
+url = 'https://endresshauser.eu-3.celonis.cloud/'
+
+# Specify a valid API token for your Cloud Team.
+#Click on Team Settings -> Edit -> create or copy already inserted API key
+
+api_token = 'NDEzZDFkN2YtZjVmZC00MTE0LTg2ODAtNmZlZDM5YzU5YTEwOjBxR0xOSFhjdDQ4MFNDc0V1UDIwbldzNWd2VXFVeUZieCt5MjdzbUhySkRP'
+c = get_celonis(url,api_token)
+#loop over all entries of the datapools
+for i in c.pools:
+    #loop over all entries in the datajobs
+    for j in i.data_jobs:
+        #check if the Name Transformation is in the job
+        if 'Transformation' in j.name:
+            sql = ''
+            for transformation in j.transformations.data:
+                # check if statement is empty
+                if transformation.statement is None:
+                    continue
+                # check if the transformation task is enabled     
+                if transformation.data['disabled'] == True:
+                    continue
+                # write everything in the sql variable    
+                sql = sql + '--###' + transformation.name + '###--' + '\n\n' + transformation.statement.strip() + '\n\n'
+            # create file path object, the files left
+            filepath = os.path.join('', i.name + ' '+ j.name + '.sql')
+            # if file arleady exists -> delte it
+            if os.path.exists(filepath):
+                  os.remove(filepath)
+            #write the sql object into the file 
+            with open(filepath, 'w') as f:
+                f.write(fix_text(sql))
