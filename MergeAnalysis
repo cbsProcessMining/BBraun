@@ -1,0 +1,42 @@
+def merge_analysis(analysis_original, analysis_merged, analysis_new_name):
+    """
+    Merge two analyses and create new analysis as draft version.
+    All features except for images are merged.
+
+    Parameters
+    ----------
+    analysis_original : :class:`Analysis`
+        To be copied all features
+    analysis_merged : :class:`Analysis`
+        To be copied formulas, variables, sheets, color mappings, palettes
+    analysis_new_name : str
+        name of new Analysis
+
+    Returns
+    -------
+    :class:`Analysis`
+        The newly created Analysis
+    """
+
+    # create empty analysis
+    analysis_new = workspace.create_analysis(analysis_new_name)
+    # inherit feature of original ananlysis
+    analysis_new.draft.data['document'] = analysis_original.draft.data['document']
+    # merge formulas
+    formulas = analysis_original._saved_formula_data + analysis_merged._saved_formula_data
+    for f in formulas:
+        analysis_new.create_saved_formula(**f)
+    # merge variables
+    variables = analysis_original.draft.data['document']['variables'] + analysis_merged.draft.data['document']['variables']
+    analysis_new.draft.data['document']['variables'] = variables
+    # merge sheets
+    sheets = analysis_original.draft.data['document']['components'] + analysis_merged.draft.data['document']['components']
+    analysis_new.draft.data['document']['components'] = sheets
+    # merge color mappings
+    colorMappings = analysis_original.draft.data['document']['colorMappings'] + analysis_merged.draft.data['document']['colorMappings']
+    analysis_new.draft.data['document']['colorMappings'] = colorMappings
+    # merge palettes
+    palettes = analysis_original.draft.data['document']['palettes'] + analysis_merged.draft.data['document']['palettes']
+    analysis_new.draft.data['document']['palettes'] = palettes
+    # return new analysis
+    return analysis_new
