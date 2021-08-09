@@ -1,0 +1,69 @@
+import pandas as pd
+
+ 
+
+#csv file name to be read in 
+
+in_csv = 'C:\\Users\\maximilian.fink\\Desktop\\PC\\AFKO_new.csv'
+
+ 
+
+#get the number of lines of the csv file to be read
+
+number_lines = sum(1 for row in (open(in_csv)))
+
+ 
+
+#size of rows of data to write to the csv, 
+
+#you can change the row size according to your need
+
+rowsize = 125000
+
+ 
+
+j = 0
+
+#start looping through data writing it to a new file for each set
+
+for i in range(1,number_lines,rowsize):
+
+    df = pd.read_csv(in_csv,
+
+          sep=';',
+
+          nrows = rowsize,#number of rows to read at each loop
+
+          skiprows = i,
+
+          error_bad_lines=False, 
+
+          index_col=False, 
+
+          dtype='unicode',
+
+          names=["MANDT",   "AUFNR",    "GLTRP",    "GSTRP",    "FTRMS",    "GLTRS",    "GSTRS",    "GSTRI",    "GETRI",    "GLTRI",    "FTRMI",    "FTRMP",    "RSNUM",    "GASMG",    "GAMNG",    "GMEIN",    "PLNBEZ",   "PLNTY",    "PLNNR",    "PLNAW",    "PLNAL",    "PVERW",    "PLAUF",    "PLSVB",    "PLNME",    "PLSVN",    "PDATV",    "PAENR",    "PLGRP",    "LODIV",    "STLTY",    "STLBEZ",   "STLST",    "STLNR",    "SDATV",    "SBMNG",    "SBMEH",    "SAENR",    "STLAL",    "STLAN",    "SLSVN",    "SLSBS",    "AUFLD",    "DISPO",    "AUFPL",    "FEVOR",    "FHORI",    "TERKZ",    "REDKZ",    "APRIO",    "NTZUE",    "VORUE",    "PROFID",   "VORGZ",    "SICHZ",    "FREIZ",    "UPTER",    "BEDID",    "PRONR",    "ZAEHL",    "MZAEHL",   "ZKRIZ",    "PRUEFLOS", "KLVARP",   "KLVARI",   "RGEKZ",    "PLART",    "FLG_AOB",  "FLG_ARBEI",    "GLTPP",    "GSTPP",    "GLTPS",    "GSTPS",    "FTRPS",    "RDKZP",    "TRKZP",    "RUECK",    "RMZHL",    "IGMNG",    "RATID",    "GROID",    "CUOBJ",    "GLUZS",    "GSUZS",    "REVLV",    "RSHTY",    "RSHID",    "RSNTY",    "RSNID",    "NAUTERM",  "NAUCOST",  "STUFE",    "WEGXX",    "VWEGX",    "ARSNR",    "ARSPS",    "MAUFNR",   "LKNOT",    "RKNOT",    "PRODNET",  "IASMG",    "ABARB",    "AUFNT",    "AUFPT",    "APLZT",    "NO_DISP",  "CSPLIT",   "AENNR",    "CY_SEQNR", "BREAKS",   "VORGZ_TRM",    "SICHZ_TRM",    "TRMDT",    "GLUZP",    "GSUZP",    "GSUZI",    "GEUZI",    "GLUPP",    "GSUPP",    "GLUPS",    "GSUPS",    "CHSCH",    "KAPT_VORGZ",   "KAPT_SICHZ",   "LEAD_AUFNR",   "PNETSTARTD",   "PNETSTARTT",   "PNETENDD", "PNETENDT", "KBED", "KKALKR",   "SFCPF",    "RMNGA",    "GSBTR",    "VFMNG",    "NOPCOST",  "NETZKONT", "ATRKZ",    "OBJTYPE",  "CH_PROC",  "KAPVERSA", "COLORDPROC",   "KZERB",    "CONF_KEY", "ST_ARBID", "VSNMR_V",  "TERHW",    "SPLSTAT",  "COSTUPD",  "MAX_GAMNG",    "MES_ROUTINGID",    "ADPSP",    "RMANR",    "POSNR_RMA",    "POSNV_RMA",    "CFB_MAXLZ",    "CFB_LZEIH",    "CFB_ADTDAYS",  "CFB_DATOFM",   "CFB_BBDPI",    "OIHANTYP", "FSH_MPROD_ORD",    "FLG_BUNDLE",   "MILL_RATIO",   "BMEINS",   "BMENGE",   "MILL_OC_ZUSKZ"])#skip rows that have been read
+
+#csv to write data to a new file with indexed name. input_1.csv etc.
+
+    out_csv = 'AFKO_' + str(j)
+
+    j = j + 1
+
+    df.to_csv('C:\\Users\\maximilian.fink\\Desktop\\PC\\'+out_csv+'.csv', index=False, chunksize=rowsize)#size of data to append for each loop#, chunksize=rowsize)#size of data to append for each loop
+
+    df.to_parquet('C:\\Users\\maximilian.fink\\Desktop\\PC\\'+out_csv+'.parquet')
+
+ 
+
+ 
+
+Count lines of csv:
+
+ 
+
+import pandas as pd
+
+df = pd.read_csv('C:\\Users\\maximilian.fink\\Desktop\\PC\\QALS_2021_07_23_10_54_11_857.csv', sep=';', error_bad_lines=False, index_col=False, dtype='unicode')
+
+print("Number of Rows: ", len(df.axes[0]))
