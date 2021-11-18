@@ -1,0 +1,16 @@
+import glob
+import pyarrow as pa
+import pyarrow.parquet as pq
+i = 0
+for file in glob.iglob('C:/Users/josef.rieger/Desktop/OneDrive_2021-11-12/AUFM reload/*'):
+    df = pd.read_csv(file, sep='\t', encoding='latin-1',low_memory=False,dtype = str)
+    df.dropna(axis = 1, how = 'all', inplace = True)
+    colum = dict()
+    for i in df.columns:
+        colum[i] = i.replace('Ä','Ae').replace('Ö','Oe').replace('Ü','Ue')\
+                    .replace('Ö','Oe').replace('ä','ae').replace('ö','oe').replace('ü','ue')\
+                    .replace('.','_').replace('/','_').replace('-','_')
+    df = df.rename(colum, axis='columns')
+    # Convert DataFrame to Apache Arrow Table
+    table = pa.Table.from_pandas(df)
+    pq.write_table(table, file+'.parquet')
